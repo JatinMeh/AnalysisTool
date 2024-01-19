@@ -4,10 +4,10 @@ from tkinter import ttk,filedialog,messagebox
 from tkcalendar import DateEntry
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-#import mplcursors
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg,NavigationToolbar2Tk
+import mplcursors
 
-
+#Calculate the Percentage between current value and the average
 def calculate_percentage(file_path, start_date, end_date, curr_price):
 
     df = pd.read_csv(file_path)
@@ -37,6 +37,7 @@ def calculate_percentage(file_path, start_date, end_date, curr_price):
     percentage = ((curr_price - avg) / avg) * 100
     return percentage,avg,open_data,close_data,high_data,low_data
 
+#Calculating difference between high - close
 def calculate_difference(file_path, start_date, end_date):
     df = pd.read_csv(file_path)
 
@@ -53,10 +54,10 @@ def calculate_difference(file_path, start_date, end_date):
 
     difference=filtered_data['High ']-filtered_data['Close ']
 
-    return difference,filtered_data['Date ']
+    return difference,filtered_data['Date '],filtered_data['Close ']
 
 
-
+#default date range after selecting csv file
 def set_default_date_range(file_path):
     try:
         df = pd.read_csv(file_path)
@@ -68,14 +69,15 @@ def set_default_date_range(file_path):
     except Exception as e:
         messagebox.showerror("Error", f"Error while setting default date range: {str(e)}")
 
+#browse button
 def browse_file():
     file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
     file_path_entry.delete(0, tk.END)
     file_path_entry.insert(0, file_path)
     set_default_date_range(file_path)
 
-
-def plot_graph(difference,dates):
+#Plotting graph
+def plot_graph(difference,dates,close_value):
 
     graph_window = tk.Toplevel(window)
     graph_window.title("Difference Graph")
@@ -84,11 +86,9 @@ def plot_graph(difference,dates):
 
     unique_dates = sorted(set(dates))
 
-    if len(unique_dates) < 10:
-        ax.set_xticks(unique_dates)
-        ax.set_xticklabels([date.strftime('%Y-%m-%d') for date in unique_dates], rotation=45)
-    ax.plot(dates, difference, label='Difference (High - Open)')
-    ax.set_xticklabels([date.strftime('%Y-%m-%d') for date in dates], rotation=45)
+    ax.plot(unique_dates, difference, label='Difference (High - Open)')
+    ax.plot(unique_dates, close_value, label='Close value', color='red')
+    ax.tick_params(labelrotation=45)
     ax.set_xlabel('Date')
     ax.set_ylabel('Difference')
     ax.set_title('Difference between High and Open')
@@ -99,16 +99,23 @@ def plot_graph(difference,dates):
     canvas_widget = canvas.get_tk_widget()
     canvas_widget.pack(side=tk.TOP, fill=tk.BOTH, expand=1) 
 
-    #mplcursors.cursor(hover=True).connect("add", lambda sel: sel.annotation.set_text(f"{sel.artist.get_label()}\nDifference: {sel.target[1]:.2f}"))
+    toolbar = NavigationToolbar2Tk(canvas, graph_window)
+    toolbar.update()
+    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+    mplcursors.cursor(hover=True).connect("add", lambda sel: sel.annotation.set_text(f"{sel.artist.get_label()}\nDifference: {sel.target[1]:.2f}"))
 
     graph_window.protocol("WM_DELETE_WINDOW", lambda: on_graph_window_close(graph_window))
+
+
 
 def on_graph_window_close(graph_window):
     graph_window.destroy()
 
+#Submit button
 def on_submit():
-    if curr_price_entry.get() == '':
-        messagebox.showwarning("No Data","Please Enter the Current Value")
+    if curr_price_entry.get() == '' or curr_price_entry.get().isalpha():
+        messagebox.showwarning("Error","Please check your current value and enter the number")
         return None
     
 
@@ -117,10 +124,10 @@ def on_submit():
     end_date = end_date_entry.get()
     curr_price = float(curr_price_entry.get())
 
-    # print(calculate_difference(file_path,start_date,end_date))    
-    
+    #print(calculate_difference(file_path,start_date,end_date))    
+
     percentage,avg,open,close,high,low = calculate_percentage(file_path, start_date, end_date, curr_price)
-    difference, dates=calculate_difference(file_path,start_date,end_date)
+    difference, dates,close_value=calculate_difference(file_path,start_date,end_date)
 
     if percentage is not None:
         result_label.config(text=f"Percentage Change: {percentage:.2f}%")
@@ -131,7 +138,7 @@ def on_submit():
         low_label.config(text=f"Low: {low:.2f}")
     
     if difference is not None:
-        plot_graph(difference,dates)
+        plot_graph(difference,dates,close_value)
     
 
 
