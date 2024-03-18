@@ -1,4 +1,6 @@
 import streamlit as st
+import threading
+import time
 from datetime import date,datetime
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -9,6 +11,7 @@ from nselib import capital_market
 
 
 def calculate_ema(close_data):
+    # window=(datetime.strptime(end_date, '%d-%m-%Y')-datetime.strptime(start_date, '%d-%m-%Y')).days
     ema = close_data.ewm(span=20, adjust=False).mean()
     return ema
  
@@ -35,9 +38,16 @@ def get_options_after_ema(start_date,end_date):
     idx = capital_market.nifty50_equity_list()
     symbols = idx['Symbol']
     
+    threads = []
+    
     for symbol in symbols:
-        get_symbol(symbol, result_list, start_date, end_date)
-        
+        thread = threading.Thread(target=get_symbol, args=(symbol, result_list, start_date, end_date))
+        thread.start()
+        time.sleep(0.6)
+        threads.append(thread)
+    
+    for thread in threads:
+        thread.join()
 
     return result_list
 
