@@ -6,7 +6,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import mpld3
-from mpld3 import plugins
 import streamlit.components.v1 as components
 from nselib import capital_market
 
