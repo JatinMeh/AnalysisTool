@@ -1,6 +1,6 @@
 @ECHO OFF
-set root=C:\Users\jatin\OneDrive\Desktop\StockAnalysisTool\AnalysisTool
+set root={root path}
 call %root%\Scripts\activate.bat
-cd C:\Users\jatin\OneDrive\Desktop\StockAnalysisTool
+cd {Root Folder}
 call streamlit run Dashboard.py
 pause
